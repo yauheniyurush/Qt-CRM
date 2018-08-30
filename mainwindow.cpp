@@ -1,4 +1,6 @@
 #include "mainwindow.h"
+#include "mainframe.h"
+#include "catalogue.h"
 
 #include <QMenuBar>
 
@@ -15,6 +17,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     QMenu *mItem = menuBar()->addMenu(tr("File"));
     mItem->addAction(closeAction);
+
+    mainframe *M = new mainframe(this);
+    setCentralWidget(M);
 }
 
 MainWindow::~MainWindow()
