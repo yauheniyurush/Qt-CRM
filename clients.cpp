@@ -1,14 +1,14 @@
-﻿#include "catalogue.h"
+﻿#include "clients.h"
 
 #include <QAction>
 #include <QMenu>
 #include <QtSql>
-
+#include <QMessageBox>
 
 #include "posaction.h"
 
 namespace CRM {
-namespace Catalogue {
+namespace clients {
 
 /****************************************************************************/
 
@@ -16,20 +16,14 @@ Model::Model(QObject *parent) : QAbstractTableModel(parent) {
 
     QSqlQuery qry;
     qry.setForwardOnly(true);
-    qry.prepare( "select      \n"
-                   "iid,        \n"
-                   "Code,       \n"
-                   "Title,      \n"
-                   "valid_from, \n"
-                   "valid_to,   \n"
-                   "is_local,   \n"
-                   "acomment,   \n"
-                   "rid_parent, \n"
-                   "alevel      \n"
-                   "from catalogue;");
+    qry.prepare( "select         \n"
+                   "iid,         \n"
+                   "name,        \n"
+                   "surname      \n"
+                   "from clients;");
     if (qry.exec()) {
         while(qry.next()){
-            Item::Data *D = new Item::Data(this, qry);
+            client::Data *D = new client::Data(this, qry);
             Cat.append(D);
         }
     } else {
@@ -38,61 +32,15 @@ Model::Model(QObject *parent) : QAbstractTableModel(parent) {
         qCritical() << Err.nativeErrorCode();
         qCritical() << Err.databaseText().toUtf8().data();
         qCritical() << Err.driverText().toUtf8().data();
-
     }
-
-
-    //Это тестовый каталог. Заменить на настоящий
-    /*
-    {
-        Item::Data *D = new Item::Data(this);
-        D->Code = "111";
-        D->Title = "Физика";
-        D->From = QDateTime::currentDateTime();
-        D->To = QDateTime();
-        D->IsLocal = false ;
-        Cat.append(D);
-    }{
-        Item::Data *D = new Item::Data(this);
-        D->Code = "222";
-        D->Title = "Математика";
-        D->From = QDateTime::currentDateTime();
-        D->To = QDateTime();
-        D->IsLocal = false ;
-        Cat.append(D);
-    }{
-        Item::Data *D = new Item::Data(this);
-        D->Code = "333";
-        D->Title = "Биология";
-        D->From = QDateTime::currentDateTime();
-        D->To = QDateTime();
-        D->IsLocal = false ;
-        Cat.append(D);
-    }{
-        Item::Data *D = new Item::Data(this);
-        D->Code = "444";
-        D->Title = "Валеология";
-        D->From = QDateTime::currentDateTime();
-        D->To = QDateTime();
-        D->IsLocal = true ;
-        Cat.append(D);
-    }{
-        Item::Data *D = new Item::Data(this);
-        D->Code = "555";
-        D->Title = "Литература";
-        D->From = QDateTime::currentDateTime();
-        D->To = QDateTime();
-        D->IsLocal = false ;
-        D->Comment = "Проверить правильность";
-        Cat.append(D);
-    }*/
-
 }
 
+/*------------------------------------------------------------------------------*/
 Model::~Model(){
 
 }
 
+/*------------------------------------------------------------------------------*/
 int Model::rowCount(const QModelIndex &parent) const{
     if (! parent.isValid()) {
         return Cat.size() ;//TODO заменить на правильное количество
@@ -101,70 +49,63 @@ int Model::rowCount(const QModelIndex &parent) const{
     }
 }
 
-/****************************************************************************/
 
+/*------------------------------------------------------------------------------*/
 int Model::columnCount(const QModelIndex &parent) const{
     if (! parent.isValid()) {
-        return 6 ;
+        return 2 ;
     } else {
         return 0;
     }
 }
 
-/****************************************************************************/
+//методы по отображению информации
 
+/*------------------------------------------------------------------------------*/
 QVariant Model::dataDisplay(const QModelIndex &I) const{
-    Item::Data *D = Cat[I.row()];
+    client::Data *D = Cat[I.row()];
     switch (I.column() ) {
-      case 0 : return D->Code ;
-      case 1 : return D->Title ;
-      case 2 : return D->From.isValid() ? D->From.toString("dd.MM.yyyy") : "" ;
-      case 3 : return D->To.isValid() ? D->To.toString("dd.MM.yyyy") : "" ;
-      case 4 : return D->IsLocal ? tr("LOCAL") : QString() ;
-      case 5 : return D->Comment.isEmpty() ? QString() : tr("CMT") ;
-      default : return QVariant();
+      case 0 : return D->Name ;
+      case 1 : return D->Surname ;
+     default : return QVariant();
     }
 }
 
+/*------------------------------------------------------------------------------*/
 QVariant Model::dataTextAlignment(const QModelIndex &I) const{
     int Result = Qt::AlignVCenter;
     Result |= I.column() == 1 ? Qt::AlignLeft : Qt::AlignHCenter ;
     return Result;
 }
 
-Item::Data * Model::dataDataBlock(const QModelIndex &I) const {
+/*------------------------------------------------------------------------------*/
+client::Data * Model::dataDataBlock(const QModelIndex &I) const {
     int R = I.row();
     if (R < 0 || R >= Cat.size()) return 0;
     return Cat[R];
 }
 
+/*------------------------------------------------------------------------------*/
 QVariant Model::dataFont(const QModelIndex &I) const {
-    Item::Data *D = dataDataBlock(I);
+    client::Data *D = dataDataBlock(I);
     if (!D) return QVariant();
     QFont F;
     if (D->Deleted) F.setStrikeOut(true);
     return F;
 }
 
+/*------------------------------------------------------------------------------*/
 QVariant Model::dataForeground(const QModelIndex &I) const {
-    Item::Data *D = dataDataBlock(I);
+    client::Data *D = dataDataBlock(I);
     if (!D) return QVariant();
-    QColor Result = D->IsLocal ? QColor("blue") : QColor ("black") ;
-    if (!D->isActive()) Result.setAlphaF(1.0/3.0);
+    QColor Result = QColor ("black") ;
+    //Result.setAlphaF(1.0/3.0);
     return Result;
-    //if (!(D->To.isValid())) return QVariant();
-    //if (D->To > QDateTime::currentDateTime()) {
-    //    if (D->IsLocal) return QColor("#0000FF");
-    //    else return QColor("#000000");
-    //}
-    //else {
-    //    return QColor("#AAAAAA");
-    //}
-
 }
 
+/*------------------------------------------------------------------------------*/
 QVariant Model::dataToolTip(const QModelIndex &I) const {
-    Item::Data *D = dataDataBlock(I);
+/*    client::Data *D = dataDataBlock(I);
     if (!D) return QVariant();
     switch (I.column()) case 2:{
         if (!D->To.isValid()) return QVariant();
@@ -172,10 +113,11 @@ QVariant Model::dataToolTip(const QModelIndex &I) const {
 
     default : return QVariant();
     }
-
+*/
     return QVariant("ToolTip");
 }
 
+/*------------------------------------------------------------------------------*/
 QVariant Model::data(const QModelIndex &I, int role) const {
 
     switch (role) {
@@ -186,7 +128,7 @@ QVariant Model::data(const QModelIndex &I, int role) const {
       case Qt::ToolTipRole          : return dataToolTip(I);
       //case Qt::UserRole          : return QVariant(dataDataBlock(I));
       case Qt::UserRole+1          : {
-        Item::Data *D =dataDataBlock(I);
+        client::Data *D =dataDataBlock(I);
         if (!D) return false;
         return D->Deleted;
     }
@@ -195,8 +137,7 @@ QVariant Model::data(const QModelIndex &I, int role) const {
 
 }
 
-/****************************************************************************/
-
+/*------------------------------------------------------------------------------*/
 QVariant Model::headerData(int section,
                            Qt::Orientation orientation,
                            int role) const{
@@ -207,11 +148,8 @@ QVariant Model::headerData(int section,
 
     case Qt::DisplayRole :
     switch (section) {
-      case 0 : return tr("Code")    ;
-      case 1 : return tr("Title")   ;
-      case 2 : return tr("From")    ;
-      case 3 : return tr("To")      ;
-      case 4 : return tr("Is Local");
+      case 0 : return tr("Name")    ;
+      case 1 : return tr("Surname")   ;
       default : return QVariant()   ;
     }
 
@@ -231,13 +169,15 @@ QVariant Model::headerData(int section,
 
 }
 
+/*------------------------------------------------------------------------------*/
+
 void Model::delItem( const QModelIndex &I, QWidget *parent){
     //спросить у пользователя уверен ли он что хочет удалить элемент
-    Item::Data *D = dataDataBlock(I);
+    client::Data *D = dataDataBlock(I);
     if (!D) return;
     //to do исходим из того что модель линейна
     beginResetModel();//модель отправляет всем представлениям связанным с данной моделью сигнал о том что данные редактируются и представления не могут запрашивать данные на редактирование
-    if (D->Id.isNull() || !D->Id.isValid()) {
+    if (D->Id.isNull()) {
     Cat.removeAt(I.row());
     delete D;
     } else {
@@ -247,8 +187,8 @@ void Model::delItem( const QModelIndex &I, QWidget *parent){
 }
 
 void Model::editItem( const QModelIndex &I, QWidget *parent){
-    Item::Dialog Dia( parent );
-    Item::Data *D = dataDataBlock(I);
+    client::Dialog Dia( parent );
+    client::Data *D = dataDataBlock(I);
     if (!D) return;
     Dia.setDataBlock(D);
     beginResetModel();//модель отправляет всем представлениям связанным с данной моделью сигнал о том что данные редактируются и представления не могут запрашивать данные на редактирование
@@ -257,17 +197,12 @@ void Model::editItem( const QModelIndex &I, QWidget *parent){
 }
 
 void Model::newItem( const QModelIndex &parentI, QWidget *parent){
-    if (parentI.isValid()) {
-        //Сделать добавление нового элемента не обязательно в корень каталога
-        qWarning()<<"Cannot add non top-level item";
-        return;
-    }
-    Item::Data *D = new Item::Data(this);
+    client::Data *D = new client::Data(this);
     if (!D) {
         qWarning() << "Cannot create new item";
         return;
     }
-    Item::Dialog Dia( parent );
+    client::Dialog Dia( parent );
     Dia.setDataBlock(D);
     if (Dia.exec() == QDialog::Accepted) {
         beginResetModel();//модель отправляет всем представлениям связанным с данной моделью сигнал о том что данные редактируются и представления не могут запрашивать данные на редактирование
@@ -277,27 +212,206 @@ void Model::newItem( const QModelIndex &parentI, QWidget *parent){
         delete D;
     }
 }
+
+void Model::save(){
+    try {
+    if (!delete_all()) throw (int)1;//удалить все элементы помеченные для удал
+    if (!save_all()  ) throw (int)2;//сохранить измененённые эл-ты
+    if (!insert_all()  ) throw (int)3;//сохранить новые эл-ты
+    QMessageBox::information(0,tr("Info"),tr("Changes saved successfully"));
+    //сохранить новые элементы
+    } catch (int x){
+        QMessageBox::critical(0, tr("Error"), tr("Cannot save changes"));
+    }
+}
+
+//функция для удаления из базы данных
+bool Model::delete_all_from_db(client::Data *D) {
+    client::List *Cl =  &Cat ;
+    client::Data *X;
+    foreach (X, *Cl) {
+    if (X->Deleted) {
+        QSqlQuery DEL ;
+        DEL.setForwardOnly(true);
+        DEL.prepare("Delete from clients where iid = :IID ;");
+        DEL.bindValue(":IID", X->Id) ;
+        if (!DEL.exec()) {
+        qCritical() << DEL.lastError().databaseText();
+        qCritical() << DEL.lastError().driverText();
+        qCritical() << DEL.lastError().nativeErrorCode();
+        return false ;
+        }
+     }
+    }
+    return true;
+}
+
+
+
+//функция для удаления из модели
+bool Model::delete_all_from_model(client::Data *D) {
+    bool Result = true;
+    client::List *Cl = &Cat ;
+    beginResetModel();
+    for (int k = Cl->size()-1; k>=0; k--) {
+        if (Cl->at(k)->Deleted) {
+         client::Data *X = Cl->takeAt(k);
+        delete X;
+        }
+    }
+    endResetModel();
+    return Result;
+}
+
+//основная функция для удаления
+bool Model::delete_all() {
+    bool R = true ;
+    QSqlDatabase DB = QSqlDatabase::database();
+    DB.transaction();
+    if (delete_all_from_db())
+    {
+        DB.commit();
+        return delete_all_from_model();
+    }
+    else {
+        DB.rollback();
+        return false;
+    }
+}
+
+//сохраняем изменения
+bool Model::save_all_to_db(client::Data *D){
+    client::List *Cl =  &Cat ;
+    client::Data *X;
+    foreach (X, *Cl) {
+        if (X->Changed) {
+            QSqlQuery UPD ;
+            UPD.setForwardOnly(true);
+            UPD.prepare("update clients set   \n"
+                         "name       = :NAME   , \n"
+                         "surname      = :SURNAME \n"
+                         "where iid  = :IID        ");
+            UPD.bindValue(":NAME"   , X->Name   ) ;
+            UPD.bindValue(":SURNAME"  , X->Surname  ) ;
+            UPD.bindValue(":IID"    , X->Id     ) ;
+
+            if (!UPD .exec()) {
+                qCritical() << UPD.executedQuery();
+                qCritical() << UPD.lastError().databaseText();
+                qCritical() << UPD.lastError().driverText();
+                qCritical() << UPD.lastError().nativeErrorCode();
+                return false ;
+            }
+        }
+    }
+    return true;
+}
+//удаляем флаг что элемент менялся
+bool Model::drop_change_mark(client::Data *D){
+    client::List *Cl =  &Cat ;
+    client::Data *X;
+    foreach (X, *Cl) {
+        if (X->Changed == true) X->Changed = false;
+    }
+    return true;
+}
+
+//основная функция удаления
+bool Model::save_all(){
+    QSqlDatabase DB = QSqlDatabase::database();
+    DB.transaction();
+    if (save_all_to_db())
+    {
+        DB.commit();
+        return drop_change_mark();
+    }
+    else {
+        DB.rollback();
+        return false;
+    }
+}
+
+//сохраняем новые элементы
+bool Model::insert_all_to_db(client::Data *D){
+    client::List *Cl =  &Cat ;
+    client::Data *X;
+    foreach (X, *Cl) {
+    bool must_be_saved = X ? X->isNew() : false;
+        if (must_be_saved) {
+        QSqlQuery INS ;
+        INS.setForwardOnly(true);
+        INS.prepare("insert into clients (\n"
+                    "name, surname          \n"
+                    ") values (             \n"
+                    ":NAME, :SURNAME        \n"
+                    ")returning iid;        \n"
+                    );
+        INS.bindValue(":NAME"   , X->Name   ) ;
+        INS.bindValue(":SURNAME", X->Surname) ;
+        if (!INS .exec()) {
+            qCritical() << INS.lastError().databaseText().toUtf8().data();
+            qCritical() << INS.lastError().driverText();
+            qCritical() << INS.lastError().nativeErrorCode();
+            return false;
+        }
+        while (INS.next()) {
+            X->setProperty("new_id", INS.value("iid"));
+        }
+    }
+    }
+    return true;
+}
+
+//сохраняем новые элементы
+bool Model::adjust_id_for_new(client::Data *D){
+    client::List *Cl =  &Cat ;
+    client::Data *X;
+    foreach (X, *Cl) {
+    bool must_be_saved = X ? X->isNew() : false;
+    if (must_be_saved) {
+        X->Id = X->property("new_id");
+    }
+    }
+    return true;
+}
+
+//основная функция добавления
+bool Model::insert_all(){
+    QSqlDatabase DB = QSqlDatabase::database();
+    DB.transaction();
+    if (insert_all_to_db())
+    {
+        DB.commit();
+        return adjust_id_for_new();
+    }
+    else {
+        DB.rollback();
+        return false;
+    }
+}
+
 /****************************************************************************/
+
 TableView::TableView(QWidget *parent) :QTableView(parent){
 
     Model *M = new Model(this);
     setModel( M );
 
-    {
+/*    {
         QHeaderView *H = verticalHeader() ;
         H->setSectionResizeMode(QHeaderView::ResizeToContents);//автоподбор высоты строк + высоту строк нельзя будет изменять
     }{
         QHeaderView *H = horizontalHeader() ;
         H->setSectionResizeMode(QHeaderView::ResizeToContents);//автоподбор высоты строк + высоту строк нельзя будет изменять
         H->setSectionResizeMode(1,QHeaderView::Stretch);
-    }
+    }*/
 
 
     //вызов окна редактирования для строки по действию
-
     setContextMenuPolicy(Qt::CustomContextMenu);//объявили политику всплывающего меню
 
-    connect(this,SIGNAL(customContextMenuRequested(QPoint)), //связали экшн вызова меню с нашим акшн contextMenuRequested
+    //связали экшн вызова меню с нашим акшн contextMenuRequested
+    connect(this,SIGNAL(customContextMenuRequested(QPoint)),
             this,SLOT(contextMenuRequested(QPoint)));
 
     {
@@ -323,6 +437,13 @@ TableView::TableView(QWidget *parent) :QTableView(parent){
                 M,SLOT(editItem(QModelIndex,QWidget*)) );
         addAction(A);
     }
+    {
+        QAction *A = actSave =new QAction(this);
+        A->setText(tr("Save"));
+        connect(A,SIGNAL(triggered()),
+                M,SLOT(save()) );
+        addAction(A);
+    }
     //скрытие колонки
     setColumnHidden(3, true);
     setColumnHidden(4, true);
@@ -342,6 +463,7 @@ void TableView::contextMenuRequested(const QPoint &p) {
     QMenu M(this);
     QModelIndex I = indexAt(p);
     if (I.isValid()) {
+        //удаление-восстановление
         actDelItem->I=I;
         actDelItem->pWidget=this;
         if (I.data(Qt::UserRole+1).toBool() ) {
@@ -351,16 +473,18 @@ void TableView::contextMenuRequested(const QPoint &p) {
            actDelItem->setText(tr("Delete"));
         }
         M.addAction(actDelItem);
+        //редактирование
         actEditItem->I=I;
         actEditItem->pWidget = this;
         M.addAction(actEditItem);
-
     }
+    //новый элемент
     actNewItem->I=QModelIndex();
     actNewItem->pWidget=this;
     M.addAction(actNewItem);
+    M.addAction(actSave);//экшн по сохранению
     M.exec(mapToGlobal(p));
 }
 /****************************************************************************/
-}//Catalogue
+}//clients
 }//namespace CRM

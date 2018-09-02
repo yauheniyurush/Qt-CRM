@@ -1,5 +1,5 @@
 #include "mainframe.h"
-#include "catalogue.h"
+#include "clients.h"
 
 namespace CRM {
 
@@ -16,7 +16,7 @@ mainframe::mainframe(QWidget *parent)
     ui.setupUi(frame);
     L->addWidget(frame);
 
-    Catalogue::TableView *M = new Catalogue::TableView(this);
+    clients::TableView *M = new clients::TableView(this);
     L->addWidget(M);
 
     L->setContentsMargins(3,3,3,3);

@@ -1,6 +1,6 @@
 #include "mainwindow.h"
 #include "mainframe.h"
-#include "catalogue.h"
+#include "clients.h"
 
 #include <QMenuBar>
 

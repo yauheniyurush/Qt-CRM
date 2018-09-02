@@ -9,8 +9,8 @@ Application::Application(int argc, char *argv[]) :QApplication (argc, argv)
     QSqlDatabase db = QSqlDatabase::addDatabase("QPSQL") ;
     db.setHostName("localhost");
     db.setPort(5432);
-    db.setDatabaseName("store");
-    //так указывать логин и пароль указывать нельзя
+    db.setDatabaseName("CRM");
+    //так указывать логин и пароль нельзя
     db.open("admin","1");
 }
 

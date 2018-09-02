@@ -1,5 +1,5 @@
-#ifndef CATITEMEDIT_H
-#define CATITEMEDIT_H
+#ifndef CLIENTEDIT_H
+#define CLIENTEDIT_H
 
 #include "ui_catitemframe.h"
 
@@ -7,32 +7,37 @@
 #include "dialogtpl.h"
 
 
+
+
 class QSqlQuery;
 
 namespace CRM {
-namespace Catalogue {
-namespace Item {
+namespace clients {
+namespace client {
 
 /***************************************************/
-
+class Data;
+class List : public QList<Data*> {
+public:
+    List() : QList<Data*>() {}
+};
 
 class Data : public QObject {
 
     Q_OBJECT
 
 public:
-    Data(QObject *parent=0):QObject(parent), IsLocal(true), pParentItem(0), Deleted(false) {}
+    Data(QObject *parent=0):QObject(parent), pParentItem(0), Deleted(false) {}
     Data(QObject *parent, QSqlQuery &qry);
     QVariant  Id     ;
-    QString   Code   ;
-    QString   Title  ;
-    QDateTime From   ;
-    QDateTime To     ;
-    QString   Comment;
-    bool      IsLocal;
+    QString   Name   ;
+    QString   Surname;
     Data      *pParentItem ;
     bool    Deleted;
     bool    isActive() const;
+    bool      isNew() const   ;
+    bool      Changed     ; //параметр показывает редактировался ли объект
+
 };
 
 
@@ -91,8 +96,8 @@ public:
 
 
 
-} // namespace Item
-} // namespace Catalogue
+} // namespace client
+} // namespace clients
 } // namespace CRM
 
-#endif // CATITEMEDIT_H
+#endif // CLIENTEDIT_H

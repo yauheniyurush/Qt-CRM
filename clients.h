@@ -1,9 +1,9 @@
-#ifndef CATALOGUE_H
-#define CATALOGUE_H
+#ifndef clients_H
+#define clients_H
 
 #include <QAbstractTableModel>
 #include <QTableView>
-#include "catitemedit.h"
+#include "clientedit.h"
 
 class QAction;
 
@@ -12,7 +12,7 @@ namespace CRM {
 }
 
 namespace CRM {
-namespace Catalogue {
+namespace clients {
 
 /****************************************************************************/
 class Model: public QAbstractTableModel {
@@ -20,7 +20,7 @@ class Model: public QAbstractTableModel {
     Q_OBJECT
 
 private:
-    QList<Item::Data*> Cat;
+    client::List Cat;
 
 protected:
     virtual QVariant dataDisplay(const QModelIndex &I) const;
@@ -28,7 +28,7 @@ protected:
     virtual QVariant dataForeground(const QModelIndex &I) const;
     virtual QVariant dataFont(const QModelIndex &I) const;
     virtual QVariant dataToolTip(const QModelIndex &I) const;
-    virtual Item::Data * dataDataBlock(const QModelIndex &I) const;
+    virtual client::Data * dataDataBlock(const QModelIndex &I) const;
 
 public:
     Model(QObject *parent = 0);
@@ -42,11 +42,28 @@ public:
                         Qt::Orientation orientation,
                         int role) const;
 
+private:
+    //удаление
+    bool delete_all_from_db(client::Data *D = 0);//удаление из базы
+    bool delete_all_from_model(client::Data *D = 0);//удаление из модели
+    //сохранение изменений
+    bool save_all_to_db(client::Data *D=0);//сохраняем изменения
+    bool drop_change_mark(client::Data *D=0);//удаляем флаг что элемент менялся
+    bool insert_all_to_db(client::Data *D=0);//сохраняем новые элементы
+    bool adjust_id_for_new(client::Data *D=0);//сохраняем новые элементы
+
+protected:
+    bool delete_all(); //основная функция удаления
+    bool save_all();   //основная функция сохранения
+    bool insert_all(); //основная функция добавления
+
 public slots:
+    //изменение в модели
     void editItem(const QModelIndex &I      , QWidget *parent=0);
     void newItem (const QModelIndex &parentI, QWidget *parent=0);
     void delItem (const QModelIndex &I      , QWidget *parent=0);
-
+    //сохранение изменений в базу
+    void save();
 };
 
 /****************************************************************************/
@@ -59,6 +76,7 @@ private:
     PosAction *actEditItem; //вызов окна редактирования для выбранной строки
     PosAction *actNewItem ;
     PosAction *actDelItem ;
+    QAction   *actSave;//экшн по сохранению
 
 public:
     TableView(QWidget *parent=0);
@@ -67,16 +85,11 @@ public:
 
 private slots:
     void contextMenuRequested(const QPoint &p) ;
-//  void editItem(); //вызов окна редактирования для выбранной строки
-
-//signals:
-//  void mustEditItem(const QModelIndex &I, QWidget *parent);
-
 };
 
 
 /****************************************************************************/
-}//Catalogue
+}//clients
 }//namespace CRM
 
-#endif // CATALOGUE_H
+#endif // clients_H

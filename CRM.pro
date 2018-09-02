@@ -28,19 +28,19 @@ SOURCES += \
     mainwindow.cpp \
     mainframe.cpp \
     application.cpp \
-    catitemedit.cpp \
     dialogtpl.cpp \
-    catalogue.cpp \
-    posaction.cpp
+    posaction.cpp \
+    clients.cpp \
+    clientedit.cpp
 
 HEADERS += \
         mainwindow.h \
     mainframe.h \
     application.h \
-    catitemedit.h \
     dialogtpl.h \
-    catalogue.h \
-    posaction.h
+    posaction.h \
+    clients.h \
+    clientedit.h
 
 FORMS += \
 mainframe.ui \
