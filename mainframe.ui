@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>597</width>
-    <height>108</height>
+    <height>113</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -44,7 +44,7 @@
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <property name="spacing">
-         <number>0</number>
+         <number>3</number>
         </property>
         <property name="leftMargin">
          <number>0</number>
@@ -104,12 +104,45 @@
           </property>
          </widget>
         </item>
+        <item>
+         <widget class="QToolButton" name="toolButton">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>135</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Поиск</string>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>18</width>
+            <height>18</height>
+           </size>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
      </item>
     </layout>
    </item>
   </layout>
+  <action name="actionApplyFilter">
+   <property name="text">
+    <string>Apply</string>
+   </property>
+   <property name="toolTip">
+    <string>Apply filter</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

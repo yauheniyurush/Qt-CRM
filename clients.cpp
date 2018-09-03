@@ -485,6 +485,47 @@ void TableView::contextMenuRequested(const QPoint &p) {
     M.addAction(actSave);//экшн по сохранению
     M.exec(mapToGlobal(p));
 }
+/*------------------------------------------------------------------------------*/
+//фильтер
+void Model::apply_filter(QObject *F){
+    fName = F->property("name");
+    fSurname = F->property("surname");
+    adjust_query();
+}
+
+void Model::adjust_query(){
+    QString QueryText = "select       \n"
+                        "iid,         \n"
+                        "name,        \n"
+                        "surname      \n"
+                        "from clients \n"
+                        "where 1=1      ";
+     if (fName.isValid()) QueryText += "and name ~ :NAME \n";
+     if (fSurname.isValid()) QueryText += "and surname ~ :SURNAME \n";
+     QueryText += "; \n";
+
+     QSqlQuery qry;
+     qry.prepare(QueryText);
+     if (fName.isValid()) qry.bindValue(":NAME","^"+fName.toString());
+     if (fSurname.isValid()) qry.bindValue(":SURNAME","^"+fSurname.toString());
+     if ( !qry.exec() ) {
+         qCritical() <<  qry.lastError().databaseText().toUtf8().data();
+     } else {
+         client::List *Cl = &Cat ;
+         beginResetModel();
+         for (int k = Cl->size()-1; k>=0; k--) {
+              client::Data *X = Cl->takeAt(k);
+             delete X;
+
+         }
+         endResetModel();
+         while(qry.next()){
+             client::Data *D = new client::Data(this, qry);
+             Cat.append(D);
+         }
+     }
+}
+
 /****************************************************************************/
 }//clients
 }//namespace CRM

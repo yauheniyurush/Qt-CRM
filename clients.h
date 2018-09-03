@@ -21,6 +21,9 @@ class Model: public QAbstractTableModel {
 
 private:
     client::List Cat;
+    QVariant fName;
+    QVariant fSurname;
+    void adjust_query();
 
 protected:
     virtual QVariant dataDisplay(const QModelIndex &I) const;
@@ -64,6 +67,8 @@ public slots:
     void delItem (const QModelIndex &I      , QWidget *parent=0);
     //сохранение изменений в базу
     void save();
+    //фильтер
+    void apply_filter(QObject *F);
 };
 
 /****************************************************************************/

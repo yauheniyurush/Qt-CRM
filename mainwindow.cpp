@@ -20,6 +20,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     mainframe *M = new mainframe(this);
     setCentralWidget(M);
+
+
 }
 
 MainWindow::~MainWindow()
