@@ -16,15 +16,16 @@ mainframe::mainframe(QWidget *parent)
     QFrame *frame = new QFrame(this);
     ui.setupUi(frame);
 
-
     L->addWidget(frame);
 
-    clients::TableView *M = new clients::TableView(this);
+    clients::TableView *M = new clients::TableView(this) ;
+    M->setSizePolicy(QSizePolicy::Expanding,
+                     QSizePolicy::Expanding);
     L->addWidget(M);
 
-    L->setContentsMargins(3,3,3,3);
-    L->setStretchFactor(M,5);
-    L->setStretchFactor(frame,1);
+    L->setContentsMargins(3,0,3,0);
+    //L->setStretchFactor(M,8);
+    //L->setStretchFactor(frame,1);
 
 
     //фильтер
@@ -47,6 +48,27 @@ QVariant mainframe::surname() const {
     QString T = ui.surnameEdt->text().simplified();
     return T.isEmpty() ? QVariant() : T;
 }
+
+QVariant mainframe::Patronymic() const {
+    QString T = ui.EdtPatronymic->text().simplified();
+    return T.isEmpty() ? QVariant() : T;
+}
+
+QVariant mainframe::City() const {
+    QString T = ui.edtCity->text().simplified();
+    return T.isEmpty() ? QVariant() : T;
+}
+
+QVariant mainframe::Street() const {
+    QString T = ui.edtStreet->text().simplified();
+    return T.isEmpty() ? QVariant() : T;
+}
+
+QVariant mainframe::PhoneNumber() const {
+    QString T = ui.EdtPhone->text().simplified();
+    return T.isEmpty() ? QVariant() : T;
+}
+
 
 void mainframe::apply_filter_triggered(){
     emit apply_filter(this);

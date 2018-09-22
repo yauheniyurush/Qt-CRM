@@ -23,6 +23,10 @@ private:
     client::List Cat;
     QVariant fName;
     QVariant fSurname;
+    QVariant fPatronymic;
+    QVariant fPhoneNumber;
+    QVariant fCity;
+    QVariant fStreet;
     void adjust_query();
 
 protected:

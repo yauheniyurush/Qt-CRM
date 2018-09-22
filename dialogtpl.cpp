@@ -29,6 +29,7 @@ void ButtonsDlg::error_message(const QString &msg) {
 
 CommonDialog::CommonDialog(QWidget *parent) :QDialog (parent) {
 
+    this->setWindowTitle("Телефонный справочник");
     QVBoxLayout *L = new QVBoxLayout (this );
 
     {

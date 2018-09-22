@@ -16,11 +16,12 @@ Model::Model(QObject *parent) : QAbstractTableModel(parent) {
 
     QSqlQuery qry;
     qry.setForwardOnly(true);
-    qry.prepare( "select         \n"
-                   "iid,         \n"
-                   "name,        \n"
-                   "surname      \n"
-                   "from clients;");
+    qry.prepare("select s.iid, name, surname, patronymic, \n"
+                "p.phonetype, p.phonenumber, \n"
+                "a.city, a.street, a.lastpartadress \n"
+                "from clients s \n"
+                "left outer join phone_numbers p on p.iid = s.iid \n"
+                "left outer join adress a on a.iid = s.iid");
     if (qry.exec()) {
         while(qry.next()){
             client::Data *D = new client::Data(this, qry);
@@ -53,7 +54,7 @@ int Model::rowCount(const QModelIndex &parent) const{
 /*------------------------------------------------------------------------------*/
 int Model::columnCount(const QModelIndex &parent) const{
     if (! parent.isValid()) {
-        return 2 ;
+        return 8 ;
     } else {
         return 0;
     }
@@ -65,8 +66,14 @@ int Model::columnCount(const QModelIndex &parent) const{
 QVariant Model::dataDisplay(const QModelIndex &I) const{
     client::Data *D = Cat[I.row()];
     switch (I.column() ) {
-      case 0 : return D->Name ;
-      case 1 : return D->Surname ;
+      case 2 : return D->Name ;
+      case 3 : return D->Surname ;
+      case 4 : return D->Patronymic;
+      case 0 : return D->PhoneType;
+      case 1 : return D->PhoneNumber;
+      case 5 : return D->City;
+      case 6 : return D->Street;
+      case 7 : return D->LastpartAdress;
      default : return QVariant();
     }
 }
@@ -90,6 +97,7 @@ QVariant Model::dataFont(const QModelIndex &I) const {
     client::Data *D = dataDataBlock(I);
     if (!D) return QVariant();
     QFont F;
+    F.setPointSize(7);
     if (D->Deleted) F.setStrikeOut(true);
     return F;
 }
@@ -148,8 +156,14 @@ QVariant Model::headerData(int section,
 
     case Qt::DisplayRole :
     switch (section) {
-      case 0 : return tr("Name")    ;
-      case 1 : return tr("Surname")   ;
+      case 0 : return tr("Тип")    ;
+      case 1 : return tr("Телефон")   ;
+      case 2 : return tr("Имя")   ;
+      case 3 : return tr("Фамилия")   ;
+      case 4 : return tr("Отчество")   ;
+      case 5 : return tr("Город")   ;
+      case 6 : return tr("Улица")   ;
+      case 7 : return tr("Доп. адр.")   ;
       default : return QVariant()   ;
     }
 
@@ -160,6 +174,12 @@ QVariant Model::headerData(int section,
     { //Сделать шрифт жирным
         QFont F;
         F.setBold(true);
+        return F;
+    }
+    case Qt::FontRole :
+    {
+        QFont F;
+        F.setPointSize(7);
         return F;
     }
 
@@ -218,10 +238,10 @@ void Model::save(){
     if (!delete_all()) throw (int)1;//удалить все элементы помеченные для удал
     if (!save_all()  ) throw (int)2;//сохранить измененённые эл-ты
     if (!insert_all()  ) throw (int)3;//сохранить новые эл-ты
-    QMessageBox::information(0,tr("Info"),tr("Changes saved successfully"));
+    QMessageBox::information(0,tr("Info"),tr("Сохранено"));
     //сохранить новые элементы
     } catch (int x){
-        QMessageBox::critical(0, tr("Error"), tr("Cannot save changes"));
+        QMessageBox::critical(0, tr("Error"), tr("Ошибка сохранения"));
     }
 }
 
@@ -231,15 +251,41 @@ bool Model::delete_all_from_db(client::Data *D) {
     client::Data *X;
     foreach (X, *Cl) {
     if (X->Deleted) {
-        QSqlQuery DEL ;
-        DEL.setForwardOnly(true);
-        DEL.prepare("Delete from clients where iid = :IID ;");
-        DEL.bindValue(":IID", X->Id) ;
-        if (!DEL.exec()) {
-        qCritical() << DEL.lastError().databaseText();
-        qCritical() << DEL.lastError().driverText();
-        qCritical() << DEL.lastError().nativeErrorCode();
-        return false ;
+            {
+                QSqlQuery DEL ;
+                DEL.setForwardOnly(true);
+                DEL.prepare("Delete from adress where iid = :IID ;");
+                DEL.bindValue(":IID", X->Id) ;
+                if (!DEL.exec()) {
+                qCritical() << DEL.lastError().databaseText();
+                qCritical() << DEL.lastError().driverText();
+                qCritical() << DEL.lastError().nativeErrorCode();
+                return false ;
+                }
+            }
+        {
+            QSqlQuery DEL ;
+            DEL.setForwardOnly(true);
+            DEL.prepare("Delete from phone_numbers where iid = :IID ;");
+            DEL.bindValue(":IID", X->Id) ;
+            if (!DEL.exec()) {
+            qCritical() << DEL.lastError().databaseText();
+            qCritical() << DEL.lastError().driverText();
+            qCritical() << DEL.lastError().nativeErrorCode();
+            return false ;
+            }
+        }
+        {
+            QSqlQuery DEL ;
+            DEL.setForwardOnly(true);
+            DEL.prepare("Delete from clients where iid = :IID ;");
+            DEL.bindValue(":IID", X->Id) ;
+            if (!DEL.exec()) {
+            qCritical() << DEL.lastError().databaseText();
+            qCritical() << DEL.lastError().driverText();
+            qCritical() << DEL.lastError().nativeErrorCode();
+            return false ;
+            }
         }
      }
     }
@@ -335,19 +381,21 @@ bool Model::save_all(){
 bool Model::insert_all_to_db(client::Data *D){
     client::List *Cl =  &Cat ;
     client::Data *X;
+    QVariant Id;
     foreach (X, *Cl) {
     bool must_be_saved = X ? X->isNew() : false;
         if (must_be_saved) {
         QSqlQuery INS ;
         INS.setForwardOnly(true);
         INS.prepare("insert into clients (\n"
-                    "name, surname          \n"
+                    "name, surname, patronymic  \n"
                     ") values (             \n"
-                    ":NAME, :SURNAME        \n"
+                    ":NAME, :SURNAME, :PATRONYMIC        \n"
                     ")returning iid;        \n"
                     );
         INS.bindValue(":NAME"   , X->Name   ) ;
         INS.bindValue(":SURNAME", X->Surname) ;
+        INS.bindValue(":PATRONYMIC", X->Patronymic) ;
         if (!INS .exec()) {
             qCritical() << INS.lastError().databaseText().toUtf8().data();
             qCritical() << INS.lastError().driverText();
@@ -355,8 +403,43 @@ bool Model::insert_all_to_db(client::Data *D){
             return false;
         }
         while (INS.next()) {
-            X->setProperty("new_id", INS.value("iid"));
+            Id = INS.value("iid");
         }
+        //вставляем адрес
+        INS.setForwardOnly(true);
+        INS.prepare("insert into adress (                \n"
+                    "iid, city, street, lastpartadress   \n"
+                    ") values (                          \n"
+                    ":IID, :CITY, :STREET, :LASTPARTADRESS\n"
+                    ");                                  \n");
+        INS.bindValue(":IID"   , Id) ;
+        INS.bindValue(":CITY", X->City) ;
+        INS.bindValue(":STREET", X->Street) ;
+        INS.bindValue(":LASTPARTADRESS", X->LastpartAdress) ;
+        if (!INS .exec()) {
+            qCritical() << INS.lastError().databaseText().toUtf8().data();
+            qCritical() << INS.lastError().driverText();
+            qCritical() << INS.lastError().nativeErrorCode();
+            return false;
+        }
+
+        //вставляем номер телефона
+        INS.setForwardOnly(true);
+        INS.prepare("insert into phone_numbers (         \n"
+                    "iid, phonetype, phonenumber         \n"
+                    ") values (                          \n"
+                    ":IID, :PHONETYPE, :PHONENUMBER      \n"
+                    ");                                  \n");
+        INS.bindValue(":IID"        , Id);
+        INS.bindValue(":PHONETYPE"  , X->PhoneType);
+        INS.bindValue(":PHONENUMBER", X->PhoneNumber);
+        if (!INS .exec()) {
+            qCritical() << INS.lastError().databaseText().toUtf8().data();
+            qCritical() << INS.lastError().driverText();
+            qCritical() << INS.lastError().nativeErrorCode();
+            return false;
+        }
+        X->setProperty("new_id", Id);
     }
     }
     return true;
@@ -397,14 +480,15 @@ TableView::TableView(QWidget *parent) :QTableView(parent){
     Model *M = new Model(this);
     setModel( M );
 
-/*    {
-        QHeaderView *H = verticalHeader() ;
-        H->setSectionResizeMode(QHeaderView::ResizeToContents);//автоподбор высоты строк + высоту строк нельзя будет изменять
-    }{
+    //{
+    //    QHeaderView *H = verticalHeader() ;
+    //    H->setSectionResizeMode(QHeaderView::ResizeToContents);//автоподбор высоты строк + высоту строк нельзя будет изменять
+    //}
+    {
         QHeaderView *H = horizontalHeader() ;
         H->setSectionResizeMode(QHeaderView::ResizeToContents);//автоподбор высоты строк + высоту строк нельзя будет изменять
-        H->setSectionResizeMode(1,QHeaderView::Stretch);
-    }*/
+        //H->setSectionResizeMode(2,QHeaderView::Stretch);
+    }
 
 
     //вызов окна редактирования для строки по действию
@@ -416,37 +500,37 @@ TableView::TableView(QWidget *parent) :QTableView(parent){
 
     {
         PosAction *A = actDelItem = new PosAction(this);
-        A->setText(tr("delete"));
+        A->setText(tr("Удалить"));
         connect(A,SIGNAL(editItem(QModelIndex,QWidget*)),
                 M,SLOT(delItem(QModelIndex,QWidget*)) );
-        addAction(A);
+        this->addAction(A);
     }
 
     {
         PosAction *A = actNewItem = new PosAction(this);
-        A->setText(tr("add"));
+        A->setText(tr("Добавить"));
         connect(A,SIGNAL(editItem(QModelIndex,QWidget*)),
                 M,SLOT(newItem(QModelIndex,QWidget*)) );
-        addAction(A);
+        this->addAction(A);
     }
 
     {
         PosAction *A = actEditItem =new PosAction(this);
-        A->setText(tr("Edit"));
+        A->setText(tr("Редактировать"));
         connect(A,SIGNAL(editItem(QModelIndex,QWidget*)),
                 M,SLOT(editItem(QModelIndex,QWidget*)) );
-        addAction(A);
+        this->addAction(A);
     }
     {
         QAction *A = actSave =new QAction(this);
-        A->setText(tr("Save"));
+        A->setText(tr("Сохранить"));
         connect(A,SIGNAL(triggered()),
                 M,SLOT(save()) );
-        addAction(A);
+        this->addAction(A);
     }
     //скрытие колонки
-    setColumnHidden(3, true);
-    setColumnHidden(4, true);
+    //setColumnHidden(3, true);
+    //setColumnHidden(4, true);
 
 }
 
@@ -467,10 +551,10 @@ void TableView::contextMenuRequested(const QPoint &p) {
         actDelItem->I=I;
         actDelItem->pWidget=this;
         if (I.data(Qt::UserRole+1).toBool() ) {
-            actDelItem->setText(tr("Restore"));
+            actDelItem->setText(tr("Восстановление"));
         }  else
         {
-           actDelItem->setText(tr("Delete"));
+           actDelItem->setText(tr("Удаление"));
         }
         M.addAction(actDelItem);
         //редактирование
@@ -490,24 +574,39 @@ void TableView::contextMenuRequested(const QPoint &p) {
 void Model::apply_filter(QObject *F){
     fName = F->property("name");
     fSurname = F->property("surname");
+    fPatronymic = F->property("Patronymic");
+    fPhoneNumber = F->property("PhoneNumber");
+    fCity = F->property("City");
+    fStreet = F->property("Street");
     adjust_query();
 }
 
 void Model::adjust_query(){
-    QString QueryText = "select       \n"
-                        "iid,         \n"
-                        "name,        \n"
-                        "surname      \n"
-                        "from clients \n"
+    QString QueryText = "select s.iid, name, surname, patronymic, \n"
+                        "p.phonetype, p.phonenumber, \n"
+                        "a.city, a.street, a.lastpartadress \n"
+                        "from clients s \n"
+                        "left outer join phone_numbers p on p.iid = s.iid \n"
+                        "left outer join adress a on a.iid = s.iid \n"
                         "where 1=1      ";
      if (fName.isValid()) QueryText += "and name ~ :NAME \n";
      if (fSurname.isValid()) QueryText += "and surname ~ :SURNAME \n";
+     if (fPatronymic.isValid()) QueryText += "and patronymic ~ :PATRONYMIC \n";
+     if (fCity.isValid()) QueryText += "and city ~ :CITY \n";
+     if (fStreet.isValid()) QueryText += "and street ~ :STREET \n";
+     if (fPhoneNumber.isValid()) QueryText += "and phonenumber ~ :PHONENUMBER \n";
      QueryText += "; \n";
 
      QSqlQuery qry;
      qry.prepare(QueryText);
      if (fName.isValid()) qry.bindValue(":NAME","^"+fName.toString());
      if (fSurname.isValid()) qry.bindValue(":SURNAME","^"+fSurname.toString());
+     if (fPatronymic.isValid()) qry.bindValue(":PATRONYMIC","^"+fPatronymic.toString());
+     if (fCity.isValid()) qry.bindValue(":CITY","^"+fCity.toString());
+     if (fStreet.isValid()) qry.bindValue(":STREET","^"+fStreet.toString());
+     if (fPhoneNumber.isValid()) qry.bindValue(":PHONENUMBER","^"+fPhoneNumber.toString());
+
+
      if ( !qry.exec() ) {
          qCritical() <<  qry.lastError().databaseText().toUtf8().data();
      } else {

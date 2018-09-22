@@ -11,11 +11,11 @@ MainWindow::MainWindow(QWidget *parent)
 {
     {
         QAction *A = closeAction = new QAction( this ) ;
-        A->setText(tr("Close"));
+        A->setText(tr("Выход"));
         connect(closeAction, SIGNAL(triggered()), this, SLOT(close())) ;
     }
 
-    QMenu *mItem = menuBar()->addMenu(tr("File"));
+    QMenu *mItem = menuBar()->addMenu(tr("Файл"));
     mItem->addAction(closeAction);
 
     mainframe *M = new mainframe(this);

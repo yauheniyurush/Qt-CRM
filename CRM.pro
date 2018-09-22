@@ -46,3 +46,7 @@ FORMS += \
 mainframe.ui \
 buttonsframe.ui \
 catitemframe.ui
+
+STATECHARTS +=
+
+DISTFILES +=

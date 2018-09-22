@@ -32,7 +32,13 @@ public:
     QVariant  Id     ;
     QString   Name   ;
     QString   Surname;
-    Data      *pParentItem ;
+    QString   Patronymic;
+    QString   PhoneType;
+    QString   PhoneNumber;
+    QString   City;
+    QString   Street;
+    QString   LastpartAdress;
+    QVariant   pParentItem ;
     bool    Deleted;
     bool    isActive() const;
     bool      isNew() const   ;
@@ -87,7 +93,9 @@ public:
     virtual ~Dialog();
 
 public:
-    void setDataBlock(Data *D){ pFrame->setDataBlock(D); }
+    void setDataBlock(Data *D){
+        pFrame->setDataBlock(D);
+    }
 
 };
 

@@ -5,7 +5,8 @@ int main(int argc, char *argv[])
 {
     CRM::Application a(argc, argv);
     CRM::MainWindow w;
-    w.showMaximized();
+    w.setWindowTitle("Телефонный справочник");
+    w.show();
 
     return a.exec();
 }
